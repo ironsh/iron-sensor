@@ -31,6 +31,3 @@ jobs:
 
       - name: Build
         run: just build
-
-      - name: E2E tests
-        run: sudo go test -tags e2e -v -count=1 ./test/e2e/

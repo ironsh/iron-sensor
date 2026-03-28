@@ -8,9 +8,19 @@ import (
 )
 
 type Config struct {
-	SinkType string         `yaml:"sink_type"`
-	FileSink FileSinkConfig `yaml:"file_sink"`
-	Rules    RulesConfig    `yaml:"rules"`
+	SinkType   string           `yaml:"sink_type"`
+	FileSink   FileSinkConfig   `yaml:"file_sink"`
+	Rules      RulesConfig      `yaml:"rules"`
+	Detections DetectionsConfig `yaml:"detections"`
+}
+
+type DetectionsConfig struct {
+	Binaries []BinaryDetection `yaml:"binaries"`
+}
+
+type BinaryDetection struct {
+	Name    string `yaml:"name"`
+	Binary  string `yaml:"binary"`
 }
 
 type FileSinkConfig struct {

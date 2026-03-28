@@ -66,15 +66,18 @@ type Tracker struct {
 	objs  *sensorObjects
 	links []link.Link
 
+	signatures []Signature
+
 	mu      sync.Mutex
 	tracked map[uint32]*trackedAgent // agent_root_pid -> info
 	comms   map[uint32]string        // pid -> comm for ppid lookups
 }
 
-func NewTracker(emitter *events.Emitter, cls *classifier.Classifier) *Tracker {
+func NewTracker(emitter *events.Emitter, cls *classifier.Classifier, sigs []Signature) *Tracker {
 	return &Tracker{
 		emitter:    emitter,
 		classifier: cls,
+		signatures: sigs,
 		tracked:    make(map[uint32]*trackedAgent),
 		comms:      make(map[uint32]string),
 	}
@@ -165,7 +168,7 @@ func (t *Tracker) Bootstrap() error {
 			continue
 		}
 
-		sig, ok := Match(exe, argv)
+		sig, ok := MatchWith(t.signatures, exe, argv)
 		if !ok {
 			continue
 		}
@@ -290,7 +293,7 @@ func (t *Tracker) handleExec(ev bpfEvent) {
 	exe, _ := readExe(pid)
 	argv, _ := readCmdline(pid)
 
-	sig, isAgent := Match(exe, argv)
+	sig, isAgent := MatchWith(t.signatures, exe, argv)
 
 	if isAgent {
 		// If this pid was in a tracked subtree, promote it to the new root.
@@ -419,7 +422,7 @@ func (t *Tracker) adoptSubtree(pid, rootPID uint32, parentSig string, startTime 
 		// Check if this child is itself an agent.
 		exe, _ := readExe(cpid)
 		argv, _ := readCmdline(cpid)
-		if sig, ok := Match(exe, argv); ok {
+		if sig, ok := MatchWith(t.signatures, exe, argv); ok {
 			t.mu.Lock()
 			_, alreadyTracked := t.tracked[cpid]
 			t.mu.Unlock()

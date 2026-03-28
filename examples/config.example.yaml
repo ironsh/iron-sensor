@@ -9,6 +9,14 @@ file_sink:
   max_backups: 5      # number of rotated files to keep
   compress: true      # gzip rotated files
 
+# Additional agent detections.
+# Each entry adds a binary name to detect as an agent root process.
+# Built-in detections (claude_code, openclaw, codex) are always active.
+detections:
+  binaries: []
+    # - name: my_agent        # signature name in events
+    #   binary: my-agent-bin  # basename of argv[0] to match
+
 rules:
   # Minimum severity to emit. 0 = alert, 1 = warn, 2 = info.
   # Events with severity above this threshold are dropped.

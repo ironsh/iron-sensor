@@ -55,7 +55,8 @@ func main() {
 	defer emitter.Close()
 
 	cls := classifier.New(cfg.Rules.Overrides)
-	tracker := agent.NewTracker(emitter, cls)
+	sigs := agent.BuildSignatures(cfg.Detections.Binaries)
+	tracker := agent.NewTracker(emitter, cls, sigs)
 
 	log.Printf("iron-sensor %s starting (sink=%s)", events.SensorVersion, cfg.SinkType)
 

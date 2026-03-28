@@ -3,6 +3,8 @@ package agent
 import (
 	"testing"
 
+	"iron-sensor/internal/config"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -63,5 +65,42 @@ func TestMatch_Codex_NoMatch_WrongArg(t *testing.T) {
 
 func TestMatch_NoMatch(t *testing.T) {
 	_, ok := Match("/usr/bin/bash", []string{"bash", "-c", "echo hello"})
+	require.False(t, ok)
+}
+
+func TestBuildSignatures_CustomBinary(t *testing.T) {
+	dets := []config.BinaryDetection{
+		{Name: "exfil_agent", Binary: "exfil-tool"},
+	}
+	sigs := BuildSignatures(dets)
+
+	// Should still match builtins.
+	sig, ok := MatchWith(sigs, "/usr/local/bin/claude", []string{"claude"})
+	require.True(t, ok)
+	require.Equal(t, "claude_code", sig)
+
+	// Should match the custom binary.
+	sig, ok = MatchWith(sigs, "/tmp/exfil-tool", []string{"exfil-tool", "--target", "s3"})
+	require.True(t, ok)
+	require.Equal(t, "exfil_agent", sig)
+
+	// Absolute path in argv[0] should also match.
+	sig, ok = MatchWith(sigs, "/tmp/exfil-tool", []string{"/usr/local/bin/exfil-tool"})
+	require.True(t, ok)
+	require.Equal(t, "exfil_agent", sig)
+}
+
+func TestBuildSignatures_NoCustom(t *testing.T) {
+	sigs := BuildSignatures(nil)
+	require.Equal(t, len(BuiltinSignatures()), len(sigs))
+}
+
+func TestBuildSignatures_CustomNoMatchOther(t *testing.T) {
+	dets := []config.BinaryDetection{
+		{Name: "my_agent", Binary: "my-agent"},
+	}
+	sigs := BuildSignatures(dets)
+
+	_, ok := MatchWith(sigs, "/usr/bin/bash", []string{"bash"})
 	require.False(t, ok)
 }

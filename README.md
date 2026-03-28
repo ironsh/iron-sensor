@@ -125,6 +125,26 @@ When an agent is detected (via executable name and argv matching), iron-sensor r
 
 Detection works both at startup (scanning `/proc`) and live (via the exec tracepoint).
 
+#### Custom binary detections
+
+You can configure additional binary detections via the `detections` section in your config file. Each entry matches on the basename of `argv[0]`, the same way the built-in Claude Code and OpenClaw detections work.
+
+```yaml
+detections:
+  binaries:
+    - name: exfil_agent
+      binary: exfil-tool
+    - name: custom_assistant
+      binary: my-ai-agent
+```
+
+| Field | Description |
+|---|---|
+| `name` | Signature name that appears in emitted events (`signature_matched`) |
+| `binary` | Basename of `argv[0]` to match (e.g. `my-agent` matches `/usr/local/bin/my-agent`) |
+
+Custom detections are appended to the built-in set — built-in agents are always detected regardless of config.
+
 ### Detection rules
 
 Events are classified by a rule engine with three categories. First match wins within each category.
