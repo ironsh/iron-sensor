@@ -53,11 +53,6 @@ struct chmod_event {
 // tracepoint infrastructure — we skip them by starting our struct at the
 // first tracepoint-specific field.
 
-// No manual tp_fork_ctx struct — kernel 6.12+ changed parent_comm/child_comm
-// from char[16] to __data_loc char[], shifting field offsets. We use CO-RE
-// (BPF_CORE_READ on trace_event_raw_sched_process_fork from vmlinux.h) so the
-// loader relocates parent_pid/child_pid offsets for the running kernel.
-
 struct tp_exit_ctx {
 	u64 __pad;
 	char comm[16];
