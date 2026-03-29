@@ -53,14 +53,10 @@ struct chmod_event {
 // tracepoint infrastructure — we skip them by starting our struct at the
 // first tracepoint-specific field.
 
-struct tp_fork_ctx {
-	// common fields (8 bytes) — not accessed directly
-	u64 __pad;
-	char parent_comm[16];
-	s32 parent_pid;
-	char child_comm[16];
-	s32 child_pid;
-};
+// No manual tp_fork_ctx struct — kernel 6.12+ changed parent_comm/child_comm
+// from char[16] to __data_loc char[], shifting field offsets. We use CO-RE
+// (BPF_CORE_READ on trace_event_raw_sched_process_fork from vmlinux.h) so the
+// loader relocates parent_pid/child_pid offsets for the running kernel.
 
 struct tp_exit_ctx {
 	u64 __pad;
@@ -140,10 +136,15 @@ struct {
 
 // Tracepoint: sched/sched_process_fork
 // If parent is in a tracked subtree, add child to the same subtree.
+// Uses CO-RE reads for parent_pid/child_pid because kernel 6.12+ changed
+// the tracepoint layout (parent_comm/child_comm went from char[16] to
+// __data_loc char[]), shifting field offsets. BPF_CORE_READ lets the
+// loader resolve the correct offsets for the running kernel.
 SEC("tracepoint/sched/sched_process_fork")
-int tp_sched_process_fork(struct tp_fork_ctx *ctx) {
-	u32 parent_pid = ctx->parent_pid;
-	u32 child_pid = ctx->child_pid;
+int tp_sched_process_fork(void *ctx) {
+	struct trace_event_raw_sched_process_fork *raw = ctx;
+	u32 parent_pid = BPF_CORE_READ(raw, parent_pid);
+	u32 child_pid = BPF_CORE_READ(raw, child_pid);
 
 	u32 *root = bpf_map_lookup_elem(&pid_to_root, &parent_pid);
 	if (root) {
